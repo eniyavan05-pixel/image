@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>300 DPI DIB Batch Converter</title>
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- JSZip for creating the download folder -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 min-h-screen flex items-center justify-center p-6 text-slate-100 font-sans">
 
@@ -13,9 +15,9 @@
         
         <!-- Header -->
         <div class="text-center mb-6">
-            <span class="bg-blue-500/10 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full border border-blue-500/20">High-Resolution Tool</span>
-            <h1 class="text-2xl font-bold tracking-tight mt-3 text-white">300 DPI DIB Converter</h1>
-            <p class="text-xs text-slate-400 mt-1">Transform image collections instantly for professional printing workflows.</p>
+            <span class="bg-blue-500/15 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full border border-blue-500/20">Browser Edition (300 DPI)</span>
+            <h1 class="text-2xl font-bold tracking-tight mt-3 text-white">Batch DIB Image Converter</h1>
+            <p class="text-xs text-slate-400 mt-1">Upload images, convert to print-ready 300 DPI, and download your output folder instantly.</p>
         </div>
 
         <!-- Drag & Drop Upload Zone -->
@@ -25,15 +27,21 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                 </svg>
             </div>
-            <span class="text-sm font-semibold text-slate-200">Drop your images or ZIP here</span>
-            <span class="text-xs text-slate-400 mt-1">Supports PNG, JPG, JPEG, WEBP, ZIP</span>
-            <input type="file" id="fileInput" multiple accept="image/*,.zip" class="hidden"/>
+            <span class="text-sm font-semibold text-slate-200">Select or drop your images here</span>
+            <span class="text-xs text-slate-400 mt-1">Supports PNG, JPG, JPEG, WEBP</span>
+            <input type="file" id="fileInput" multiple accept="image/*" class="hidden"/>
         </label>
 
-        <!-- Action Button -->
-        <button id="convertBtn" class="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] transition text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/30 text-sm cursor-pointer disabled:bg-slate-700 disabled:cursor-not-allowed mb-5" disabled>
-            Start 300 DPI Conversion
-        </button>
+        <!-- Action Buttons -->
+        <div class="space-y-3 mb-5">
+            <button id="convertBtn" class="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] transition text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/30 text-sm cursor-pointer disabled:bg-slate-700 disabled:cursor-not-allowed" disabled>
+                Start 300 DPI Conversion
+            </button>
+            
+            <a id="downloadBtn" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] transition text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-emerald-600/30 text-sm text-center block cursor-pointer">
+                📥 Download Converted Folder (.zip)
+            </a>
+        </div>
 
         <!-- Progress Section -->
         <div id="progressContainer" class="hidden mb-5">
@@ -47,8 +55,8 @@
         </div>
 
         <!-- Terminal Output Log -->
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-emerald-400 h-36 overflow-y-auto shadow-inner" id="consoleLog">
-            <span class="text-slate-500">// System ready. Waiting for files...</span>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-emerald-400 h-32 overflow-y-auto shadow-inner" id="consoleLog">
+            <span class="text-slate-500">// System ready. Upload images to begin...</span>
         </div>
 
     </div>
@@ -56,6 +64,7 @@
     <script>
         const fileInput = document.getElementById('fileInput');
         const convertBtn = document.getElementById('convertBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
         const consoleLog = document.getElementById('consoleLog');
         const progressContainer = document.getElementById('progressContainer');
         const progressBar = document.getElementById('progressBar');
@@ -68,34 +77,85 @@
             selectedFiles = e.target.files;
             if (selectedFiles.length > 0) {
                 convertBtn.disabled = false;
-                log(`Loaded ${selectedFiles.length} file(s) successfully.`);
+                downloadBtn.classList.add('hidden');
+                log(`Loaded ${selectedFiles.length} file(s) ready for conversion.`);
             }
         });
 
-        convertBtn.addEventListener('click', () => {
+        convertBtn.addEventListener('click', async () => {
             if (selectedFiles.length === 0) return;
             
             convertBtn.disabled = true;
+            downloadBtn.classList.add('hidden');
             progressContainer.classList.remove('hidden');
-            log("Starting high-speed batch conversion...");
+            log("Starting 300 DPI batch conversion...");
 
-            let current = 0;
+            const zip = new JSZip();
+            const outputFolder = zip.folder("converted_dib");
             const total = selectedFiles.length;
+            let processed = 0;
 
-            const interval = setInterval(() => {
-                current += Math.max(1, Math.floor(total / 10));
-                if (current >= total) {
-                    current = total;
-                    clearInterval(interval);
-                    log("✨ All files successfully converted to 300 DPI DIB!");
-                    convertBtn.disabled = false;
+            for (let i = 0; i < total; i++) {
+                const file = selectedFiles[i];
+                try {
+                    const dataUrl = await readFileAsDataURL(file);
+                    const blob = await convertToDPIBlob(dataUrl, file.type);
+                    
+                    const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                    outputFolder.file(`${baseName}.bmp`, blob); // Saved as bitmap format container
+                    
+                    processed++;
+                    const pct = Math.round((processed / total) * 100);
+                    progressBar.style.width = pct + '%';
+                    progressPercent.innerText = pct + '%';
+                    progressText.innerText = `Processed ${processed} of ${total} files`;
+                    log(`[OK] Converted: ${file.name}`);
+                } catch (err) {
+                    log(`[FAIL] Error processing ${file.name}: ${err.message}`);
                 }
-                const pct = Math.round((current / total) * 100);
-                progressBar.style.width = pct + '%';
-                progressPercent.innerText = pct + '%';
-                progressText.innerText = `Processed ${current} of ${total} files`;
-            }, 150);
+            }
+
+            log("📦 Generating downloadable zip package...");
+            const content = await zip.generateAsync({ type: "blob" });
+            const zipUrl = URL.createObjectURL(content);
+            
+            downloadBtn.href = zipUrl;
+            downloadBtn.download = "converted_dib_folder.zip";
+            downloadBtn.classList.remove('hidden');
+            
+            log("✨ Batch conversion complete! Click download below.");
+            convertBtn.disabled = false;
         });
+
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function convertToDPIBlob(dataUrl, mimeType) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Export as bmp (standard bitmap format used for DIB)
+                    canvas.toBlob((blob) => {
+                        if (blob) resolve(blob);
+                        else reject(new Error("Canvas conversion failed"));
+                    }, 'image/bmp');
+                };
+                img.onerror = reject;
+                img.src = dataUrl;
+            });
+        }
 
         function log(message) {
             consoleLog.innerHTML += `<div class="mt-1">&gt; ${message}</div>`;

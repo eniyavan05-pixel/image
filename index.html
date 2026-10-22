@@ -6,413 +6,320 @@
 <title>300 DPI JPG Converter</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rozha+One&family=Mukta:wght@400;600;800&family=Mukta+Malar:wght@400;600;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
-  :root {
-    --paper: #eef1f6;
-    --card: #ffffff;
-    --ink: #101a33;
-    --muted: #6a7488;
-    --line: #dde2ec;
-    --accent: #2b59ff;
-    --accent-soft: #e8edff;
-    --ok: #0f8a5f;
-    --ok-soft: #e3f6ee;
-    --err: #c8372d;
-    --font: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
-  }
-  * { box-sizing: border-box; margin: 0; }
-  body {
-    font-family: var(--font);
-    background: var(--paper);
-    color: var(--ink);
-    min-height: 100vh;
-    padding: 40px 20px 60px;
-    -webkit-font-smoothing: antialiased;
-  }
-  .wrap { max-width: 1040px; margin: 0 auto; }
+:root{
+  --night:#17103a; --night2:#241a56; --pink:#d9206b; --gold:#f4a21b; --teal:#0f8b8d;
+  --ink:#1d1640; --muted:#6f6a8d; --line:#eadff0; --soft:#fff3f8; --white:#fff;
+  --f:"Mukta","Mukta Malar",system-ui,sans-serif; --d:"Rozha One","Mukta","Mukta Malar",serif;
+}
+*{box-sizing:border-box;margin:0}
+body{
+  font-family:var(--f); color:var(--ink); min-height:100vh; padding-bottom:56px;
+  background:
+    radial-gradient(circle,rgba(244,162,27,.22) 2px,transparent 2.6px) 0 0/30px 30px,
+    radial-gradient(circle,rgba(244,162,27,.22) 2px,transparent 2.6px) 15px 15px/30px 30px,
+    radial-gradient(ellipse at top,var(--night2),var(--night) 70%);
+  background-attachment:fixed;
+}
+.border{height:18px;background:conic-gradient(from -45deg at bottom,var(--gold) 0 90deg,transparent 0) 0 0/26px 100%,var(--pink);border-bottom:4px solid var(--teal)}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;padding:36px 0 26px;color:#fff}
+.badge{display:inline-flex;align-items:baseline;gap:6px;background:var(--gold);color:var(--night);border-radius:99px;padding:4px 16px 2px;font-family:var(--d);font-size:26px;margin-bottom:12px}
+.badge small{font-family:var(--f);font-weight:800;font-size:12px}
+h1{font-family:var(--d);font-weight:400;font-size:clamp(30px,5.4vw,52px);line-height:1.1}
+header p{color:#cfc8ee;max-width:380px;line-height:1.5;margin-top:8px;font-size:16px}
+.lang{display:flex;gap:6px}
+.lang button{font:inherit;font-weight:800;border:1.5px solid rgba(255,255,255,.35);background:transparent;color:#fff;border-radius:99px;padding:5px 14px;cursor:pointer}
+.lang button[aria-pressed=true]{background:#fff;color:var(--night);border-color:#fff}
+.lang button:focus-visible,.btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
-  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
-  h1 { font-size: clamp(30px, 5vw, 46px); font-weight: 800; letter-spacing: -0.035em; line-height: 1.02; }
-  header p { color: var(--muted); font-size: 15px; max-width: 360px; line-height: 1.5; }
-  .dpi-badge {
-    display: inline-flex; align-items: baseline; gap: 6px;
-    background: var(--ink); color: #fff; border-radius: 14px; padding: 10px 16px;
-    font-weight: 800; font-size: 28px; letter-spacing: -0.03em; margin-bottom: 14px;
-  }
-  .dpi-badge small { font-size: 12px; font-weight: 600; opacity: .65; letter-spacing: 0; }
+.grid{display:grid;grid-template-columns:1.05fr 1fr;gap:20px;align-items:start}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--white);border-radius:22px;padding:22px;box-shadow:0 14px 40px rgba(0,0,0,.28);border-top:6px solid var(--gold)}
+.panel.q{border-top-color:var(--teal)}
+.pt{font-weight:800;font-size:18px;margin-bottom:14px;display:flex;justify-content:space-between}
+.pt span{color:var(--muted);font-weight:600;font-size:14px}
 
-  .grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 20px; align-items: start; }
-  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+.drop{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:22px;min-height:270px;justify-content:center;cursor:pointer;
+  border:2.5px dashed var(--pink);border-radius:18px;background:var(--soft);transition:background .2s,border-color .2s}
+.drop:hover,.drop.over{background:#ffe6a8;border-color:var(--gold)}
+.drop:focus-within{outline:3px solid var(--teal);outline-offset:3px}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.mandala{width:128px;height:128px;margin-bottom:6px}
+.drop.over .mandala,.busy .mandala{animation:spin 6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.drop strong{font-size:19px;font-weight:800}
+.drop .sub{color:var(--muted);font-size:15px}
+.drop .sub u{color:var(--pink);font-weight:800;text-underline-offset:3px}
+.fm{margin-top:6px;font-size:12px;font-weight:600;color:var(--pink);letter-spacing:.04em}
 
-  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 22px; }
-  .panel-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
-  .panel-title span { color: var(--muted); font-weight: 500; font-size: 13px; }
+.qrow{display:flex;justify-content:space-between;font-weight:600;margin:18px 0 6px}
+.qrow span:last-child{color:var(--pink);font-weight:800}
+input[type=range]{width:100%;accent-color:var(--pink)}
+.actions{display:flex;gap:10px;margin-top:18px}
+.btn{font:inherit;font-weight:800;font-size:17px;border:0;border-radius:14px;padding:12px 20px;cursor:pointer;text-decoration:none;display:inline-flex;justify-content:center;align-items:center;transition:transform .15s,filter .2s}
+.btn:active:not(:disabled){transform:scale(.98)}
+.primary{flex:1;color:#fff;background:linear-gradient(135deg,var(--pink),#a5114f);box-shadow:0 8px 20px rgba(217,32,107,.35)}
+.primary:hover:not(:disabled){filter:brightness(1.08)}
+.primary:disabled{background:#d9d3e6;color:#9b95b4;box-shadow:none;cursor:not-allowed}
+.ghost{background:#fff;color:var(--muted);border:1.5px solid var(--line)}
+.ghost:disabled{opacity:.5;cursor:not-allowed}
+.dl{background:var(--teal);color:#fff;width:100%;margin-top:12px;box-shadow:0 8px 20px rgba(15,139,141,.3)}
+.hidden{display:none!important}
+.prog{margin-top:16px}
+.pr{display:flex;justify-content:space-between;font-weight:600;font-size:14px;color:var(--muted);margin-bottom:6px}
+.track{height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar{height:100%;width:0;border-radius:99px;transition:width .25s;background:linear-gradient(90deg,var(--gold),var(--pink))}
+.bar.done{background:var(--teal)}
 
-  /* Drop zone with print crop marks */
-  .drop {
-    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; gap: 6px; min-height: 250px; padding: 28px;
-    background: linear-gradient(var(--accent-soft), var(--accent-soft)) padding-box;
-    border-radius: 12px; cursor: pointer; transition: background .2s, transform .2s;
-  }
-  .drop:hover, .drop.over { background: #dbe4ff; }
-  .drop.over { transform: scale(1.01); }
-  .drop:focus-within { outline: 3px solid var(--accent); outline-offset: 3px; }
-  .crop { position: absolute; width: 22px; height: 22px; border: 0 solid var(--accent); }
-  .crop.tl { top: 10px; left: 10px; border-top-width: 2px; border-left-width: 2px; }
-  .crop.tr { top: 10px; right: 10px; border-top-width: 2px; border-right-width: 2px; }
-  .crop.bl { bottom: 10px; left: 10px; border-bottom-width: 2px; border-left-width: 2px; }
-  .crop.br { bottom: 10px; right: 10px; border-bottom-width: 2px; border-right-width: 2px; }
-  .drop svg { width: 38px; height: 38px; color: var(--accent); margin-bottom: 6px; }
-  .drop strong { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
-  .drop .sub { color: var(--muted); font-size: 14px; }
-  .drop .sub u { color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
-  .drop .formats { margin-top: 8px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
-  .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-
-  .quality { margin-top: 18px; }
-  .quality-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
-  .quality-row span:last-child { font-family: var(--mono); color: var(--accent); }
-  input[type=range] { width: 100%; accent-color: var(--accent); height: 22px; }
-  .hint { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
-
-  .actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
-  .btn {
-    font-family: inherit; font-weight: 700; font-size: 15px; border: 0; cursor: pointer;
-    border-radius: 12px; padding: 14px 20px; transition: transform .15s, background .2s, box-shadow .2s;
-    text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  }
-  .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-  .btn:active:not(:disabled) { transform: scale(.98); }
-  .btn.primary { background: var(--accent); color: #fff; flex: 1; box-shadow: 0 6px 18px rgba(43,89,255,.28); }
-  .btn.primary:hover:not(:disabled) { background: #1f48e0; }
-  .btn.primary:disabled { background: #c9d0e0; color: #8a93a8; box-shadow: none; cursor: not-allowed; }
-  .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
-  .btn.ghost:hover:not(:disabled) { color: var(--ink); border-color: var(--muted); }
-  .btn.ghost:disabled { opacity: .5; cursor: not-allowed; }
-  .btn.download { background: var(--ok); color: #fff; width: 100%; margin-top: 10px; box-shadow: 0 6px 18px rgba(15,138,95,.25); }
-  .btn.download:hover { background: #0b744f; }
-  .hidden { display: none !important; }
-
-  /* Progress */
-  .progress { margin-top: 18px; }
-  .progress-top { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
-  .progress-top b { color: var(--ink); font-family: var(--mono); font-weight: 500; }
-  .track { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
-  .bar { height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .25s ease; }
-  .bar.done { background: var(--ok); }
-
-  /* File queue */
-  .queue { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; margin: 0 -6px; }
-  .queue li { display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 10px; }
-  .queue li + li { border-top: 1px solid var(--line); border-radius: 0; }
-  .thumb { width: 42px; height: 42px; border-radius: 9px; background: var(--paper) center/cover no-repeat; flex: none; display: grid; place-items: center; color: var(--muted); font-size: 10px; font-weight: 700; font-family: var(--mono); }
-  .meta { flex: 1; min-width: 0; }
-  .meta .name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .meta .size { font-size: 12px; color: var(--muted); font-family: var(--mono); }
-  .chip { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 99px; background: var(--paper); color: var(--muted); flex: none; }
-  .chip.done { background: var(--ok-soft); color: var(--ok); }
-  .chip.work { background: var(--accent-soft); color: var(--accent); }
-  .chip.fail { background: #fde8e6; color: var(--err); }
-  .empty { text-align: center; padding: 34px 10px; color: var(--muted); font-size: 14px; line-height: 1.5; }
-
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
-  .stat { background: var(--paper); border-radius: 12px; padding: 12px 14px; }
-  .stat b { display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
-  .stat span { font-size: 12px; color: var(--muted); font-weight: 500; }
-
-  details { margin-top: 16px; }
-  summary { font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; padding: 4px 0; }
-  summary:focus-visible { outline: 2px solid var(--accent); }
-  .log { margin-top: 8px; background: #0e1628; border-radius: 12px; padding: 12px 14px; font-family: var(--mono); font-size: 12px; color: #9fe0c3; height: 120px; overflow-y: auto; line-height: 1.6; }
-  .log .dim { color: #6c7a96; }
-  .log .bad { color: #ff9b94; }
-
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.queue{list-style:none;padding:0;max-height:290px;overflow-y:auto}
+.queue li{display:flex;align-items:center;gap:12px;padding:9px 0}
+.queue li+li{border-top:1px dashed var(--line)}
+.th{width:44px;height:44px;border-radius:50%;border:2px solid var(--gold);background:var(--soft) center/cover;flex:none;display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--pink)}
+.mt{flex:1;min-width:0}
+.nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sz{font-size:13px;color:var(--muted)}
+.chip{font-size:13px;font-weight:800;padding:3px 12px;border-radius:99px;background:#f0ecf7;color:var(--muted);flex:none}
+.chip.work{background:#fff0c9;color:#a56a00}.chip.done{background:#d8f3f1;color:#0a6567}.chip.fail{background:#fde1e4;color:#b3122f}
+.empty{text-align:center;color:var(--muted);padding:36px 8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.stat{border-radius:14px;padding:10px 14px;background:var(--soft);border-left:5px solid var(--pink)}
+.stat:nth-child(2){border-color:var(--teal);background:#e8f7f6}.stat:nth-child(3){border-color:var(--gold);background:#fff6e0}
+.stat b{display:block;font-family:var(--d);font-weight:400;font-size:28px;line-height:1.1}
+.stat span{font-size:13px;color:var(--muted);font-weight:600}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);background:var(--night);color:#fff;border:2px solid var(--gold);padding:10px 20px;border-radius:99px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;z-index:9}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
+<div class="border"></div>
 <div class="wrap">
-
   <header>
     <div>
-      <div class="dpi-badge">300<small>DPI</small></div>
-      <h1>Batch JPG converter</h1>
+      <div class="badge">300<small>DPI</small></div>
+      <h1 data-t="title"></h1>
+      <p data-t="sub"></p>
     </div>
-    <p>Turn PNG, WebP, BMP and ZIP archives into print-ready JPGs. Everything runs in your browser, so your files never leave this device.</p>
+    <div class="lang" role="group" aria-label="Language">
+      <button data-l="en" aria-pressed="true">EN</button>
+      <button data-l="hi" aria-pressed="false">हिं</button>
+      <button data-l="ta" aria-pressed="false">த</button>
+    </div>
   </header>
 
   <div class="grid">
-
-    <!-- Left: upload + controls -->
     <section class="panel">
-      <div class="panel-title">Add images</div>
-
       <label class="drop" id="dropZone">
-        <i class="crop tl"></i><i class="crop tr"></i><i class="crop bl"></i><i class="crop br"></i>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1"/><path d="M12 4v12"/><path d="M8 8l4-4 4 4"/></svg>
-        <strong>Drop images or a ZIP here</strong>
-        <span class="sub">or <u>choose files</u> from your computer</span>
-        <span class="formats">PNG · JPG · WEBP · BMP · ZIP</span>
-        <input type="file" id="fileInput" multiple accept="image/*,.zip" aria-label="Choose images or ZIP files">
+        <svg class="mandala" id="mandala" viewBox="-80 -80 160 160" aria-hidden="true"></svg>
+        <strong data-t="drop"></strong>
+        <span class="sub"><u data-t="choose"></u></span>
+        <span class="fm">PNG · JPG · WEBP · BMP · ZIP</span>
+        <input type="file" id="fileInput" multiple accept="image/*,.zip">
       </label>
 
-      <div class="quality">
-        <div class="quality-row"><label for="quality">JPG quality</label><span id="qualityVal">92%</span></div>
-        <input type="range" id="quality" min="60" max="100" value="92">
-        <p class="hint">92% is a good balance of sharpness and file size for print.</p>
-      </div>
+      <div class="qrow"><label for="quality" data-t="quality"></label><span id="qv">92%</span></div>
+      <input type="range" id="quality" min="60" max="100" value="92">
 
       <div class="actions">
-        <button class="btn primary" id="convertBtn" disabled>Convert to 300 DPI JPG</button>
-        <button class="btn ghost" id="clearBtn" disabled>Clear</button>
+        <button class="btn primary" id="convertBtn" data-t="convert" disabled></button>
+        <button class="btn ghost" id="clearBtn" data-t="clear" disabled></button>
       </div>
 
-      <div class="progress hidden" id="progressContainer">
-        <div class="progress-top"><span id="progressText">Starting…</span><b id="progressPercent">0%</b></div>
-        <div class="track"><div class="bar" id="progressBar"></div></div>
+      <div class="prog hidden" id="prog">
+        <div class="pr"><span id="pt"></span><b id="pp">0%</b></div>
+        <div class="track"><div class="bar" id="bar"></div></div>
       </div>
-
-      <a id="downloadBtn" class="btn download hidden">Download converted images (.zip)</a>
+      <a id="dlBtn" class="btn dl hidden" data-t="download"></a>
     </section>
 
-    <!-- Right: queue -->
-    <section class="panel">
-      <div class="panel-title">Queue <span id="queueCount">No files yet</span></div>
-
+    <section class="panel q">
+      <div class="pt"><span style="color:var(--ink);font-size:18px;font-weight:800" data-t="queue"></span><span id="qc"></span></div>
       <ul class="queue" id="queue"></ul>
-      <div class="empty" id="empty">Your selected files will appear here.<br>Add some on the left to get started.</div>
-
+      <div class="empty" id="empty" data-t="empty"></div>
       <div class="stats">
-        <div class="stat"><b id="statFiles">0</b><span>Files added</span></div>
-        <div class="stat"><b id="statDone">0</b><span>Converted</span></div>
-        <div class="stat"><b id="statFailed">0</b><span>Failed</span></div>
+        <div class="stat"><b id="s1">0</b><span data-t="sAdded"></span></div>
+        <div class="stat"><b id="s2">0</b><span data-t="sDone"></span></div>
+        <div class="stat"><b id="s3">0</b><span data-t="sFail"></span></div>
       </div>
-
-      <details>
-        <summary>Activity log</summary>
-        <div class="log" id="consoleLog"><span class="dim">Ready. Select images or a ZIP to begin.</span></div>
-      </details>
     </section>
-
   </div>
 </div>
+<div class="border" style="margin-top:40px"></div>
+<div class="toast" id="toast" role="status"></div>
 
 <script>
-  const $ = (id) => document.getElementById(id);
-  const fileInput = $('fileInput'), dropZone = $('dropZone');
-  const convertBtn = $('convertBtn'), clearBtn = $('clearBtn'), downloadBtn = $('downloadBtn');
-  const queueEl = $('queue'), emptyEl = $('empty'), consoleLog = $('consoleLog');
-  const progressContainer = $('progressContainer'), progressBar = $('progressBar');
-  const progressPercent = $('progressPercent'), progressText = $('progressText');
-  const quality = $('quality'), qualityVal = $('qualityVal');
+const T={
+ en:{title:"Batch JPG converter",sub:"Make print-ready 300 DPI JPGs. Everything stays on your device.",drop:"Drop images or a ZIP here",choose:"or choose files",quality:"JPG quality",convert:"Convert to 300 DPI",clear:"Clear",queue:"Queue",empty:"Added files will show up here.",download:"Download ZIP",sAdded:"Added",sDone:"Converted",sFail:"Failed",ready:"Ready",work:"Converting",done:"Done",fail:"Failed",zip:"Archive",items:"items",none:"No files",finished:"All done",refreshed:"Download started. Page refreshed and ready for the next batch."},
+ hi:{title:"बैच JPG कन्वर्टर",sub:"प्रिंट के लिए 300 DPI JPG बनाइए। सब कुछ आपके डिवाइस पर ही रहता है।",drop:"तस्वीरें या ZIP यहाँ छोड़ें",choose:"या फ़ाइलें चुनें",quality:"JPG गुणवत्ता",convert:"300 DPI में बदलें",clear:"साफ़ करें",queue:"कतार",empty:"जोड़ी गई फ़ाइलें यहाँ दिखेंगी।",download:"ZIP डाउनलोड करें",sAdded:"जोड़ी गईं",sDone:"बदली गईं",sFail:"विफल",ready:"तैयार",work:"बदल रही है",done:"पूरी",fail:"विफल",zip:"आर्काइव",items:"फ़ाइलें",none:"कोई फ़ाइल नहीं",finished:"सब पूरा",refreshed:"डाउनलोड शुरू हुआ। पेज रीफ़्रेश हो गया, अगली खेप के लिए तैयार।"},
+ ta:{title:"தொகுப்பு JPG மாற்றி",sub:"அச்சுக்கு ஏற்ற 300 DPI JPG உருவாக்குங்கள். அனைத்தும் உங்கள் சாதனத்திலேயே இருக்கும்.",drop:"படங்கள் அல்லது ZIP-ஐ இங்கே விடுங்கள்",choose:"அல்லது கோப்புகளைத் தேர்ந்தெடுக்கவும்",quality:"JPG தரம்",convert:"300 DPI-க்கு மாற்று",clear:"அழி",queue:"வரிசை",empty:"சேர்த்த கோப்புகள் இங்கே தெரியும்.",download:"ZIP பதிவிறக்கு",sAdded:"சேர்த்தவை",sDone:"மாற்றியவை",sFail:"தோல்வி",ready:"தயார்",work:"மாற்றுகிறது",done:"முடிந்தது",fail:"தோல்வி",zip:"காப்பகம்",items:"கோப்புகள்",none:"கோப்புகள் இல்லை",finished:"முடிந்தது",refreshed:"பதிவிறக்கம் தொடங்கியது. பக்கம் புதுப்பிக்கப்பட்டது, அடுத்த தொகுப்புக்குத் தயார்."}
+};
+let lang="en";
+try{lang=localStorage.getItem("lang")||"en"}catch(e){}
+const $=id=>document.getElementById(id);
+const IMG=/\.(png|jpe?g|webp|bmp|tiff?)$/i;
+let items=[],nid=0,busy=false,zipUrl=null,progState=null;
 
-  const IMG_RE = /\.(png|jpg|jpeg|webp|bmp|tiff?)$/i;
-  let items = [];       // { id, file, isZip, thumb, status }
-  let nextId = 0;
-  let busy = false;
-  let zipUrl = null;
+/* Rangoli mandala */
+(function(){
+  const rings=[[16,5,15,52,"#d9206b"],[12,5,12,36,"#f4a21b"],[8,5,11,21,"#0f8b8d"]];
+  let s='<circle r="76" fill="none" stroke="#f4a21b" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round"/>';
+  rings.forEach(([n,rx,ry,d,c])=>{for(let i=0;i<n;i++){s+=`<ellipse rx="${rx}" ry="${ry}" cy="${-d}" fill="${c}" opacity=".9" transform="rotate(${i*360/n})"/>`}});
+  s+='<circle r="11" fill="#17103a"/><circle r="5" fill="#f4a21b"/>';
+  $("mandala").innerHTML=s;
+})();
 
-  quality.addEventListener('input', () => qualityVal.textContent = quality.value + '%');
-
-  /* ---------- Adding files ---------- */
-  fileInput.addEventListener('change', (e) => { addFiles(e.target.files); fileInput.value = ''; });
-  ['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add('over'); }));
-  ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.remove('over'); }));
-  dropZone.addEventListener('drop', (e) => addFiles(e.dataTransfer.files));
-
-  function addFiles(list) {
-    if (busy) return;
-    let added = 0;
-    for (const file of list) {
-      const isZip = /\.zip$/i.test(file.name);
-      if (!isZip && !IMG_RE.test(file.name)) { log(`Skipped ${file.name}: unsupported type`, 'bad'); continue; }
-      items.push({ id: nextId++, file, isZip, thumb: isZip ? null : URL.createObjectURL(file), status: 'ready' });
-      added++;
-    }
-    if (added) { resetDownload(); log(`Added ${added} file${added > 1 ? 's' : ''}.`); }
-    render();
-  }
-
-  clearBtn.addEventListener('click', () => {
-    if (busy) return;
-    items.forEach(i => i.thumb && URL.revokeObjectURL(i.thumb));
-    items = [];
-    resetDownload();
-    progressContainer.classList.add('hidden');
-    log('Queue cleared.');
-    render();
-  });
-
-  function resetDownload() {
-    downloadBtn.classList.add('hidden');
-    if (zipUrl) { URL.revokeObjectURL(zipUrl); zipUrl = null; }
-  }
-
-  /* ---------- Rendering ---------- */
-  const fmtSize = (b) => b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
-  const chipFor = (s) => ({ ready: ['Ready', ''], work: ['Converting', 'work'], done: ['Done', 'done'], fail: ['Failed', 'fail'], zip: ['Archive', ''] }[s]);
-
-  function render() {
-    queueEl.innerHTML = '';
-    items.forEach(it => {
-      const [label, cls] = chipFor(it.isZip && it.status === 'ready' ? 'zip' : it.status);
-      const li = document.createElement('li');
-      const thumb = document.createElement('div');
-      thumb.className = 'thumb';
-      if (it.thumb) thumb.style.backgroundImage = `url("${it.thumb}")`; else thumb.textContent = 'ZIP';
-      const meta = document.createElement('div');
-      meta.className = 'meta';
-      const name = document.createElement('div'); name.className = 'name'; name.textContent = it.file.name; name.title = it.file.name;
-      const size = document.createElement('div'); size.className = 'size'; size.textContent = fmtSize(it.file.size);
-      meta.append(name, size);
-      const chip = document.createElement('span'); chip.className = 'chip ' + cls; chip.textContent = label;
-      li.append(thumb, meta, chip);
-      queueEl.appendChild(li);
-    });
-    emptyEl.classList.toggle('hidden', items.length > 0);
-    $('queueCount').textContent = items.length ? `${items.length} item${items.length > 1 ? 's' : ''}` : 'No files yet';
-    $('statFiles').textContent = items.length;
-    $('statDone').textContent = items.filter(i => i.status === 'done').length;
-    $('statFailed').textContent = items.filter(i => i.status === 'fail').length;
-    convertBtn.disabled = busy || items.length === 0;
-    clearBtn.disabled = busy || items.length === 0;
-  }
-
-  function setProgress(done, total, text) {
-    const pct = total ? Math.round((done / total) * 100) : 0;
-    progressBar.style.width = pct + '%';
-    progressPercent.textContent = pct + '%';
-    progressText.textContent = text;
-    progressBar.classList.toggle('done', pct === 100);
-  }
-
-  /* ---------- Conversion ---------- */
-  convertBtn.addEventListener('click', async () => {
-    if (busy || !items.length) return;
-    busy = true;
-    resetDownload();
-    items.forEach(i => i.status = i.isZip ? 'ready' : 'ready');
-    progressContainer.classList.remove('hidden');
-    setProgress(0, 1, 'Preparing files…');
-    render();
-    log('Starting batch conversion…');
-
-    const outputZip = new JSZip();
-    const folder = outputZip.folder('converted_300dpi_jpg');
-    const jobs = [];
-
-    // Collect everything to convert
-    for (const it of items) {
-      if (it.isZip) {
-        log(`Extracting ${it.file.name}`);
-        try {
-          const zip = await JSZip.loadAsync(it.file);
-          for (const path in zip.files) {
-            const entry = zip.files[path];
-            if (!entry.dir && IMG_RE.test(path) && !path.includes('__MACOSX')) {
-              jobs.push({ owner: it, name: path.split('/').pop(), getBlob: () => entry.async('blob') });
-            }
-          }
-          it.status = 'done';
-        } catch (err) { it.status = 'fail'; log(`Could not open ${it.file.name}: ${err.message}`, 'bad'); }
-      } else {
-        jobs.push({ owner: it, name: it.file.name, getBlob: async () => it.file });
-      }
-    }
-    render();
-
-    if (!jobs.length) {
-      log('No valid images found to convert.', 'bad');
-      setProgress(0, 1, 'Nothing to convert');
-      busy = false; render(); return;
-    }
-
-    log(`Found ${jobs.length} image${jobs.length > 1 ? 's' : ''}. Converting…`);
-    const used = {};
-    let processed = 0;
-    const q = quality.value / 100;
-
-    for (const job of jobs) {
-      if (!job.owner.isZip) { job.owner.status = 'work'; render(); }
-      try {
-        const blob = await job.getBlob();
-        const jpg = await convertToJPG(blob, q);
-        let base = job.name.replace(/\.[^.]+$/, '') || job.name;
-        used[base] = (used[base] || 0) + 1;
-        const fileName = used[base] > 1 ? `${base}-${used[base] - 1}.jpg` : `${base}.jpg`;
-        folder.file(fileName, jpg);
-        if (!job.owner.isZip) job.owner.status = 'done';
-      } catch (err) {
-        if (!job.owner.isZip) job.owner.status = 'fail';
-        log(`Failed ${job.name}: ${err.message}`, 'bad');
-      }
-      processed++;
-      setProgress(processed, jobs.length, `Converted ${processed} of ${jobs.length}`);
-      if (processed % 5 === 0 || processed === jobs.length) {
-        render();
-        await new Promise(r => setTimeout(r, 4)); // keep the UI responsive
-      }
-    }
-
-    log('Packing the ZIP…');
-    const finalBlob = await outputZip.generateAsync({ type: 'blob' });
-    zipUrl = URL.createObjectURL(finalBlob);
-    downloadBtn.href = zipUrl;
-    downloadBtn.download = 'converted_300dpi_jpg.zip';
-    downloadBtn.classList.remove('hidden');
-    setProgress(jobs.length, jobs.length, `All done · ${jobs.length} image${jobs.length > 1 ? 's' : ''} converted`);
-    log('Finished. Your download is ready.');
-    busy = false;
-    render();
-  });
-
-  function convertToJPG(blob, q) {
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(blob);
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-        URL.revokeObjectURL(url);
-        canvas.toBlob(async (out) => {
-          if (!out) return reject(new Error('Canvas conversion failed'));
-          const bytes = new Uint8Array(await out.arrayBuffer());
-          resolve(new Blob([injectJPEGDPI(bytes, 300)], { type: 'image/jpeg' }));
-        }, 'image/jpeg', q);
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read image')); };
-      img.src = url;
-    });
-  }
-
-  // Writes 300 DPI into the JFIF header (units = dots per inch)
-  function injectJPEGDPI(bytes, dpi) {
-    if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF && bytes[3] === 0xE0) {
-      bytes[13] = 1;
-      bytes[14] = (dpi >> 8) & 0xFF; bytes[15] = dpi & 0xFF;
-      bytes[16] = (dpi >> 8) & 0xFF; bytes[17] = dpi & 0xFF;
-    }
-    return bytes;
-  }
-
-  function log(msg, cls = '') {
-    const d = document.createElement('div');
-    if (cls) d.className = cls;
-    d.textContent = '> ' + msg;
-    consoleLog.appendChild(d);
-    consoleLog.scrollTop = consoleLog.scrollHeight;
-  }
-
+function setLang(l){
+  lang=l;try{localStorage.setItem("lang",l)}catch(e){}
+  document.documentElement.lang=l;
+  document.querySelectorAll("[data-t]").forEach(e=>e.textContent=T[l][e.dataset.t]);
+  document.querySelectorAll("[data-l]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.l===l));
   render();
+  if(progState)setProg(...progState);
+}
+document.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>setLang(b.dataset.l));
+
+/* Adding files */
+const drop=$("dropZone");
+$("fileInput").onchange=e=>{add(e.target.files);e.target.value=""};
+["dragenter","dragover"].forEach(v=>drop.addEventListener(v,e=>{e.preventDefault();drop.classList.add("over")}));
+["dragleave","drop"].forEach(v=>drop.addEventListener(v,e=>{e.preventDefault();drop.classList.remove("over")}));
+drop.addEventListener("drop",e=>add(e.dataTransfer.files));
+$("quality").oninput=e=>$("qv").textContent=e.target.value+"%";
+
+function add(list){
+  if(busy)return;
+  for(const f of list){
+    const z=/\.zip$/i.test(f.name);
+    if(!z&&!IMG.test(f.name))continue;
+    items.push({id:nid++,file:f,zip:z,thumb:z?null:URL.createObjectURL(f),st:"ready"});
+  }
+  resetDl();render();
+}
+$("clearBtn").onclick=()=>{
+  if(busy)return;
+  items.forEach(i=>i.thumb&&URL.revokeObjectURL(i.thumb));
+  items=[];resetDl();progState=null;$("prog").classList.add("hidden");render();
+};
+function resetDl(){$("dlBtn").classList.add("hidden");if(zipUrl){URL.revokeObjectURL(zipUrl);zipUrl=null}}
+
+/* Render */
+const sz=b=>b>1048576?(b/1048576).toFixed(1)+" MB":Math.max(1,Math.round(b/1024))+" KB";
+function render(){
+  const t=T[lang],q=$("queue");q.innerHTML="";
+  items.forEach(it=>{
+    const key=it.zip&&it.st==="ready"?"zip":it.st;
+    const li=document.createElement("li");
+    li.innerHTML='<div class="th"></div><div class="mt"><div class="nm"></div><div class="sz"></div></div><span class="chip"></span>';
+    const th=li.children[0];
+    if(it.thumb)th.style.backgroundImage=`url("${it.thumb}")`;else th.textContent="ZIP";
+    li.querySelector(".nm").textContent=it.file.name;
+    li.querySelector(".sz").textContent=sz(it.file.size);
+    const c=li.querySelector(".chip");c.textContent=t[key];
+    if(["work","done","fail"].includes(it.st))c.classList.add(it.st);
+    q.appendChild(li);
+  });
+  $("empty").classList.toggle("hidden",items.length>0);
+  $("qc").textContent=items.length?`${items.length} ${t.items}`:t.none;
+  $("s1").textContent=items.length;
+  $("s2").textContent=items.filter(i=>i.st==="done").length;
+  $("s3").textContent=items.filter(i=>i.st==="fail").length;
+  $("convertBtn").disabled=busy||!items.length;
+  $("clearBtn").disabled=busy||!items.length;
+  drop.classList.toggle("busy",busy);
+}
+function setProg(d,n,fin){
+  progState=[d,n,fin];
+  const p=n?Math.round(d/n*100):0;
+  $("bar").style.width=p+"%";$("pp").textContent=p+"%";
+  $("pt").textContent=fin?T[lang].finished:`${d} / ${n}`;
+  $("bar").classList.toggle("done",!!fin);
+}
+
+/* Conversion */
+$("convertBtn").onclick=async()=>{
+  if(busy||!items.length)return;
+  busy=true;resetDl();
+  items.forEach(i=>i.st="ready");
+  $("prog").classList.remove("hidden");setProg(0,1,false);render();
+
+  const zip=new JSZip(),folder=zip.folder("converted_300dpi_jpg"),jobs=[];
+  for(const it of items){
+    if(it.zip){
+      try{
+        const z=await JSZip.loadAsync(it.file);
+        for(const p in z.files){
+          const e=z.files[p];
+          if(!e.dir&&IMG.test(p)&&!p.includes("__MACOSX"))jobs.push({o:it,name:p.split("/").pop(),get:()=>e.async("blob")});
+        }
+        it.st="done";
+      }catch(err){it.st="fail"}
+    }else jobs.push({o:it,name:it.file.name,get:async()=>it.file});
+  }
+  render();
+  if(!jobs.length){$("prog").classList.add("hidden");busy=false;render();return}
+
+  const used={},q=$("quality").value/100;let n=0;
+  for(const j of jobs){
+    if(!j.o.zip){j.o.st="work";render()}
+    try{
+      const out=await toJPG(await j.get(),q);
+      const base=j.name.replace(/\.[^.]+$/,"")||j.name;
+      used[base]=(used[base]||0)+1;
+      folder.file(used[base]>1?`${base}-${used[base]-1}.jpg`:`${base}.jpg`,out);
+      if(!j.o.zip)j.o.st="done";
+    }catch(err){if(!j.o.zip)j.o.st="fail"}
+    n++;setProg(n,jobs.length,false);
+    if(n%5===0||n===jobs.length){render();await new Promise(r=>setTimeout(r,4))}
+  }
+  const blob=await zip.generateAsync({type:"blob"});
+  zipUrl=URL.createObjectURL(blob);
+  const a=$("dlBtn");a.href=zipUrl;a.download="converted_300dpi_jpg.zip";a.classList.remove("hidden");
+  setProg(jobs.length,jobs.length,true);
+  busy=false;render();
+};
+
+function toJPG(blob,q){
+  return new Promise((res,rej)=>{
+    const u=URL.createObjectURL(blob),img=new Image();
+    img.onload=()=>{
+      const c=document.createElement("canvas");c.width=img.naturalWidth;c.height=img.naturalHeight;
+      const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0);
+      URL.revokeObjectURL(u);
+      c.toBlob(async o=>{
+        if(!o)return rej(new Error("fail"));
+        const b=new Uint8Array(await o.arrayBuffer());
+        res(new Blob([setDPI(b,300)],{type:"image/jpeg"}));
+      },"image/jpeg",q);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("read"))};
+    img.src=u;
+  });
+}
+function setDPI(b,d){
+  if(b[0]===0xFF&&b[1]===0xD8&&b[2]===0xFF&&b[3]===0xE0){
+    b[13]=1;b[14]=d>>8&255;b[15]=d&255;b[16]=d>>8&255;b[17]=d&255;
+  }
+  return b;
+}
+/* Refresh the page state after the download starts */
+$("dlBtn").addEventListener("click",()=>{
+  setTimeout(()=>{
+    items.forEach(i=>i.thumb&&URL.revokeObjectURL(i.thumb));
+    items=[];busy=false;progState=null;
+    resetDl();
+    $("prog").classList.add("hidden");
+    $("bar").style.width="0";
+    $("quality").value=92;$("qv").textContent="92%";
+    render();
+    const t=$("toast");t.textContent=T[lang].refreshed;t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"),3500);
+    window.scrollTo({top:0,behavior:"smooth"});
+  },3000);
+});
+setLang(lang);
 </script>
 </body>
 </html>

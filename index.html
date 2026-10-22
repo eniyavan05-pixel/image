@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>300 DPI DIB Image Converter</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-6">
+    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full text-center">
+        <h1 class="text-2xl font-bold text-slate-800 mb-2">300 DPI Image Converter</h1>
+        <p class="text-sm text-slate-500 mb-6">Convert your images to high-resolution print format instantly in your browser.</p>
+        
+        <label class="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl p-8 cursor-pointer bg-slate-50 hover:bg-slate-100 transition">
+            <svg class="w-10 h-10 text-blue-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <span class="text-sm font-semibold text-slate-700">Click to upload or drag images here</span>
+            <input type="file" id="fileInput" multiple accept="image/*" class="hidden"/>
+        </label>
+
+        <div id="status" class="mt-4 text-sm font-medium text-slate-600"></div>
+    </div>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                document.getElementById('status').innerText = `Successfully loaded ${files.length} images ready for processing!`;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -69,16 +69,20 @@ class ConversionWorker(QThread):
 
         # Case 1: Dropped a Zip file
         if os.path.isfile(self.target_path) and self.target_path.lower().endswith(".zip"):
-            self.log_message.emit(f"📦 Extracting ZIP file...")
+            self.log_message.emit("📦 Extracting ZIP file...")
             extract_dir = os.path.join(output_dir, "_temp_extracted")
             os.makedirs(extract_dir, exist_ok=True)
-            with zipfile.ZipFile(self.target_path, 'r') as zip_ref:
-                zip_ref.extractall(extract_dir)
-            
-            for root, _, files in os.walk(extract_dir):
-                for f in files:
-                    if f.lower().endswith(VALID_EXTENSIONS):
-                        image_paths.append((os.path.join(root, f), f))
+            try:
+                with zipfile.ZipFile(self.target_path, 'r') as zip_ref:
+                    zip_ref.extractall(extract_dir)
+                for root, _, files in os.walk(extract_dir):
+                    for f in files:
+                        if f.lower().endswith(VALID_EXTENSIONS):
+                            image_paths.append((os.path.join(root, f), f))
+            except Exception as e:
+                self.log_message.emit(f"❌ Failed to extract ZIP: {e}")
+                self.finished.emit(0, 0, 0.0)
+                return
 
         # Case 2: Dropped a Folder
         elif os.path.isdir(self.target_path):
@@ -94,11 +98,11 @@ class ConversionWorker(QThread):
 
         total_files = len(image_paths)
         if total_files == 0:
-            self.log_message.emit("❌ No valid images found in the dropped item.")
+            self.log_message.emit("❌ No valid images found in the selected path.")
             self.finished.emit(0, 0, 0.0)
             return
 
-        self.log_message.emit(f"🚀 Found {total_files} images. Starting 300 DPI DIB conversion...")
+        self.log_message.emit(f"🚀 Found {total_files} images. Converting to 300 DPI DIB...")
 
         success_count, fail_count = 0, 0
         max_workers = os.cpu_count() or 4
@@ -112,7 +116,7 @@ class ConversionWorker(QThread):
                 with Image.open(input_path) as img:
                     if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
                         img = img.convert("RGB")
-                    # Save as BMP container with 300 DPI metadata
+                    # Save as BMP/DIB container with 300 DPI resolution metadata
                     img.save(output_path, "BMP", dpi=(300, 300))
                 return filename, True, None
             except Exception as e:
@@ -127,7 +131,7 @@ class ConversionWorker(QThread):
                 processed += 1
                 if success:
                     success_count += 1
-                    self.log_message.emit(f"✅ Converted: {filename} -> 300 DPI .dib")
+                    self.log_message.emit(f"✅ Converted: {filename} -> 300 DPI")
                 else:
                     fail_count += 1
                     self.log_message.emit(f"⚠️ Failed {filename}: {error}")
@@ -141,7 +145,7 @@ class ConversionWorker(QThread):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Drag & Drop 300 DPI DIB Converter")
+        self.setWindowTitle("Bulk DIB & 300 DPI Converter")
         self.setMinimumSize(600, 500)
         self.selected_path = ""
         self.init_ui()

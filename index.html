@@ -17,7 +17,7 @@
         <div class="text-center mb-6">
             <span class="bg-blue-500/15 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full border border-blue-500/20">300 DPI JPG Export</span>
             <h1 class="text-2xl font-bold tracking-tight mt-3 text-white">Batch JPG Image Converter</h1>
-            <p class="text-xs text-slate-400 mt-1">Convert images or ZIP archives to print-ready 300 DPI JPG format instantly.</p>
+            <p class="text-xs text-slate-400 mt-1">Convert massive image collections safely in your browser.</p>
         </div>
 
         <!-- Uploader Zone -->
@@ -83,7 +83,7 @@
                 convertBtn.disabled = false;
                 downloadBtn.classList.add('hidden');
                 uploadTitle.innerText = `${selectedFiles.length} item(s) selected`;
-                uploadSubtitle.innerText = "Ready for 300 DPI JPG conversion";
+                uploadSubtitle.innerText = "Ready for batch conversion";
                 log(`Successfully loaded ${selectedFiles.length} selection(s).`);
             }
         });
@@ -94,10 +94,10 @@
             convertBtn.disabled = true;
             downloadBtn.classList.add('hidden');
             progressContainer.classList.remove('hidden');
-            log("Starting strict 300 DPI JPG batch conversion...");
+            log("Starting safe chunked batch conversion...");
 
             const outputZip = new JSZip();
-            const outputFolder = outputZip.folder("converted_jpg_300dpi");
+            const outputFolder = outputZip.folder("converted_300dpi_jpg");
             let imageEntries = [];
 
             for (let file of selectedFiles) {
@@ -127,7 +127,7 @@
                 return;
             }
 
-            log(`🚀 Converting ${imageEntries.length} images to 300 DPI JPG...`);
+            log(`🚀 Found ${imageEntries.length} images. Processing in batches...`);
             let processed = 0;
 
             for (let item of imageEntries) {
@@ -143,7 +143,11 @@
                     progressBar.style.width = pct + '%';
                     progressPercent.innerText = pct + '%';
                     progressText.innerText = `Processed ${processed} of ${imageEntries.length} files`;
-                    log(`[OK] Converted to JPG: ${item.name}`);
+
+                    if (processed % 10 === 0 || processed === imageEntries.length) {
+                        log(`[PROGRESS] Converted ${processed}/${imageEntries.length} images...`);
+                        await new Promise(r => setTimeout(r, 4)); // Yield to keep UI smooth
+                    }
                 } catch (err) {
                     log(`[FAIL] Error on ${item.name}: ${err.message}`);
                 }
@@ -179,19 +183,16 @@
                     canvas.height = img.height;
                     const ctx = canvas.getContext('2d');
                     
-                    // Fill white background for transparent PNGs/WebPs converted to JPG
                     ctx.fillStyle = '#FFFFFF';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(img, 0, 0);
                     
-                    // Export as high quality JPEG (0.92 quality)
                     canvas.toBlob(async (blob) => {
                         if (!blob) {
                             reject(new Error("Canvas conversion failed"));
                             return;
                         }
                         
-                        // Inject 300 DPI JFIF header metadata into JPEG binary
                         const buffer = await blob.arrayBuffer();
                         const bytes = new Uint8Array(buffer);
                         const modifiedBytes = injectJPEGDPI(bytes, 300);
@@ -204,16 +205,11 @@
             });
         }
 
-        // Helper to inject 300 DPI resolution into JPEG JFIF segment
-        function injectJPEGDpi(bytes, dpi) {
-            // Check for JFIF marker (FF E0 ... JFIF)
+        function injectJPEGDPI(bytes, dpi) {
             if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF && bytes[3] === 0xE0) {
-                // JFIF density units (offset 13): 1 = dots per inch
                 bytes[13] = 1; 
-                // X density (offset 14-15)
                 bytes[14] = (dpi >> 8) & 0xFF;
                 bytes[15] = dpi & 0xFF;
-                // Y density (offset 16-17)
                 bytes[16] = (dpi >> 8) & 0xFF;
                 bytes[17] = dpi & 0xFF;
             }

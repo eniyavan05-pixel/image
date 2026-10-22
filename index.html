@@ -15,9 +15,9 @@
         
         <!-- Header -->
         <div class="text-center mb-6">
-            <span class="bg-blue-500/15 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full border border-blue-500/20">ZIP & Image Converter</span>
+            <span class="bg-blue-500/15 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full border border-blue-500/20">300 DPI True Resolution</span>
             <h1 class="text-2xl font-bold tracking-tight mt-3 text-white">Batch DIB Image Converter</h1>
-            <p class="text-xs text-slate-400 mt-1">Upload individual images or a ZIP archive, convert to 300 DPI, and download instantly.</p>
+            <p class="text-xs text-slate-400 mt-1">Convert images or ZIP archives to strict 300 DPI print-ready format instantly.</p>
         </div>
 
         <!-- Uploader Zone -->
@@ -83,7 +83,7 @@
                 convertBtn.disabled = false;
                 downloadBtn.classList.add('hidden');
                 uploadTitle.innerText = `${selectedFiles.length} item(s) selected`;
-                uploadSubtitle.innerText = "Ready for conversion";
+                uploadSubtitle.innerText = "Ready for 300 DPI conversion";
                 log(`Successfully loaded ${selectedFiles.length} selection(s).`);
             }
         });
@@ -94,15 +94,14 @@
             convertBtn.disabled = true;
             downloadBtn.classList.add('hidden');
             progressContainer.classList.remove('hidden');
-            log("Starting 300 DPI batch conversion...");
+            log("Starting strict 300 DPI batch conversion...");
 
             const outputZip = new JSZip();
             const outputFolder = outputZip.folder("converted_dib");
             let imageEntries = [];
 
-            // Parse inputs (handle both raw images and zip files)
             for (let file of selectedFiles) {
-                if (file.name.toLowerCase().endsWith('.zip')) {
+                if (file.name.toLowerCase().endswith('.zip')) {
                     log(`📦 Extracting ZIP archive: ${file.name}`);
                     try {
                         const zipContent = await JSZip.loadAsync(file);
@@ -128,23 +127,23 @@
                 return;
             }
 
-            log(`🚀 Processing ${imageEntries.length} images...`);
+            log(`🚀 Applying 300 DPI metadata to ${imageEntries.length} images...`);
             let processed = 0;
 
             for (let item of imageEntries) {
                 try {
                     const dataUrl = await blobToDataURL(item.blob);
-                    const convertedBlob = await convertToDPIBlob(dataUrl);
+                    const dpiBlob = await convertTo300DPIBMP(dataUrl);
                     
                     const baseName = item.name.substring(0, item.name.lastIndexOf('.')) || item.name;
-                    outputFolder.file(`${baseName}.bmp`, convertedBlob);
+                    outputFolder.file(`${baseName}.bmp`, dpiBlob);
                     
                     processed++;
                     const pct = Math.round((processed / imageEntries.length) * 100);
                     progressBar.style.width = pct + '%';
                     progressPercent.innerText = pct + '%';
                     progressText.innerText = `Processed ${processed} of ${imageEntries.length} files`;
-                    log(`[OK] Converted: ${item.name}`);
+                    log(`[OK] Converted to 300 DPI: ${item.name}`);
                 } catch (err) {
                     log(`[FAIL] Error on ${item.name}: ${err.message}`);
                 }
@@ -155,7 +154,7 @@
             const zipUrl = URL.createObjectURL(finalZipContent);
             
             downloadBtn.href = zipUrl;
-            downloadBtn.download = "converted_dib_folder.zip";
+            downloadBtn.download = "converted_300dpi_dib.zip";
             downloadBtn.classList.remove('hidden');
             
             log("✨ Batch conversion complete! Click download below.");
@@ -171,7 +170,7 @@
             });
         }
 
-        function convertToDPIBlob(dataUrl) {
+        function convertTo300DPIBMP(dataUrl) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.onload = () => {
@@ -181,9 +180,27 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0);
                     
-                    canvas.toBlob((blob) => {
-                        if (blob) resolve(blob);
-                        else reject(new Error("Canvas conversion failed"));
+                    canvas.toBlob(async (blob) => {
+                        if (!blob) {
+                            reject(new Error("Canvas conversion failed"));
+                            return;
+                        }
+                        
+                        // Read standard bitmap array and inject 300 DPI (11811 pixels/meter) into header bytes
+                        const arrayBuffer = await blob.arrayBuffer();
+                        const uint8View = new Uint8Array(arrayBuffer);
+                        
+                        // BMP Resolution offsets: 
+                        // Offset 38 (0x26) to 41 for Horizontal Resolution (pixels/meter)
+                        // Offset 42 (0x2A) to 45 for Vertical Resolution (pixels/meter)
+                        // 300 DPI = 11811 pixels per meter (0x00002E23 in hex)
+                        const view = new DataView(arrayBuffer);
+                        if (arrayBuffer.byteLength >= 46) {
+                            view.setUint32(38, 11811, true); // X resolution: 300 DPI
+                            view.setUint32(42, 11811, true); // Y resolution: 300 DPI
+                        }
+                        
+                        resolve(new Blob([arrayBuffer], { type: 'image/bmp' }));
                     }, 'image/bmp');
                 };
                 img.onerror = reject;

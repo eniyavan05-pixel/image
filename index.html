@@ -6,7 +6,7 @@
     <title>300 DPI DIB Batch Converter</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- JSZip for creating the download folder -->
+    <!-- JSZip for handling zip files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 min-h-screen flex items-center justify-center p-6 text-slate-100 font-sans">
@@ -15,12 +15,12 @@
         
         <!-- Header -->
         <div class="text-center mb-6">
-            <span class="bg-blue-500/15 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full border border-blue-500/20">Uploader & Converter</span>
+            <span class="bg-blue-500/15 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full border border-blue-500/20">ZIP & Image Converter</span>
             <h1 class="text-2xl font-bold tracking-tight mt-3 text-white">Batch DIB Image Converter</h1>
-            <p class="text-xs text-slate-400 mt-1">Upload images, convert to print-ready 300 DPI, and download your output folder instantly.</p>
+            <p class="text-xs text-slate-400 mt-1">Upload individual images or a ZIP archive, convert to 300 DPI, and download instantly.</p>
         </div>
 
-        <!-- Clean Modern Uploader Zone -->
+        <!-- Uploader Zone -->
         <div class="mb-5">
             <label id="dropZone" class="relative flex flex-col items-center justify-center border-2 border-dashed border-slate-600 hover:border-blue-400 rounded-2xl p-8 cursor-pointer bg-slate-900/50 hover:bg-slate-900/80 transition-all duration-300 group shadow-inner">
                 <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-3 group-hover:scale-105 group-hover:bg-blue-500/20 transition">
@@ -28,9 +28,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                     </svg>
                 </div>
-                <span id="uploadTitle" class="text-sm font-semibold text-slate-200">Drag & drop your images here</span>
+                <span id="uploadTitle" class="text-sm font-semibold text-slate-200">Drag & drop your images or ZIP here</span>
                 <span id="uploadSubtitle" class="text-xs text-slate-400 mt-1">or <span class="text-blue-400 underline underline-offset-2">browse files</span> from your computer</span>
-                <input type="file" id="fileInput" multiple accept="image/*" class="hidden"/>
+                <input type="file" id="fileInput" multiple accept="image/*,.zip" class="hidden"/>
             </label>
         </div>
 
@@ -58,7 +58,7 @@
 
         <!-- Terminal Output Log -->
         <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-emerald-400 h-32 overflow-y-auto shadow-inner" id="consoleLog">
-            <span class="text-slate-500">// Uploader ready. Select images to begin...</span>
+            <span class="text-slate-500">// Uploader ready. Select images or ZIP file to begin...</span>
         </div>
 
     </div>
@@ -82,9 +82,9 @@
             if (selectedFiles.length > 0) {
                 convertBtn.disabled = false;
                 downloadBtn.classList.add('hidden');
-                uploadTitle.innerText = `${selectedFiles.length} file(s) selected`;
-                uploadSubtitle.innerText = "Click or drop more files to replace";
-                log(`Successfully loaded ${selectedFiles.length} image(s).`);
+                uploadTitle.innerText = `${selectedFiles.length} item(s) selected`;
+                uploadSubtitle.innerText = "Ready for conversion";
+                log(`Successfully loaded ${selectedFiles.length} selection(s).`);
             }
         });
 
@@ -96,34 +96,63 @@
             progressContainer.classList.remove('hidden');
             log("Starting 300 DPI batch conversion...");
 
-            const zip = new JSZip();
-            const outputFolder = zip.folder("converted_dib");
-            const total = selectedFiles.length;
+            const outputZip = new JSZip();
+            const outputFolder = outputZip.folder("converted_dib");
+            let imageEntries = [];
+
+            // Parse inputs (handle both raw images and zip files)
+            for (let file of selectedFiles) {
+                if (file.name.toLowerCase().endsWith('.zip')) {
+                    log(`📦 Extracting ZIP archive: ${file.name}`);
+                    try {
+                        const zipContent = await JSZip.loadAsync(file);
+                        for (let relativePath in zipContent.files) {
+                            const zipEntry = zipContent.files[relativePath];
+                            if (!zipEntry.dir && /\.(png|jpg|jpeg|webp|bmp|tiff)$/i.test(relativePath)) {
+                                const blob = await zipEntry.async("blob");
+                                const fileName = relativePath.split('/').pop();
+                                imageEntries.push({ name: fileName, blob: blob });
+                            }
+                        }
+                    } catch (err) {
+                        log(`[FAIL] Could not extract zip ${file.name}: ${err.message}`);
+                    }
+                } else if (/\.(png|jpg|jpeg|webp|bmp|tiff)$/i.test(file.name)) {
+                    imageEntries.push({ name: file.name, blob: file });
+                }
+            }
+
+            if (imageEntries.length === 0) {
+                log("❌ No valid images found to convert.");
+                convertBtn.disabled = false;
+                return;
+            }
+
+            log(`🚀 Processing ${imageEntries.length} images...`);
             let processed = 0;
 
-            for (let i = 0; i < total; i++) {
-                const file = selectedFiles[i];
+            for (let item of imageEntries) {
                 try {
-                    const dataUrl = await readFileAsDataURL(file);
-                    const blob = await convertToDPIBlob(dataUrl, file.type);
+                    const dataUrl = await blobToDataURL(item.blob);
+                    const convertedBlob = await convertToDPIBlob(dataUrl);
                     
-                    const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-                    outputFolder.file(`${baseName}.bmp`, blob);
+                    const baseName = item.name.substring(0, item.name.lastIndexOf('.')) || item.name;
+                    outputFolder.file(`${baseName}.bmp`, convertedBlob);
                     
                     processed++;
-                    const pct = Math.round((processed / total) * 100);
+                    const pct = Math.round((processed / imageEntries.length) * 100);
                     progressBar.style.width = pct + '%';
                     progressPercent.innerText = pct + '%';
-                    progressText.innerText = `Processed ${processed} of ${total} files`;
-                    log(`[OK] Converted: ${file.name}`);
+                    progressText.innerText = `Processed ${processed} of ${imageEntries.length} files`;
+                    log(`[OK] Converted: ${item.name}`);
                 } catch (err) {
-                    log(`[FAIL] Error processing ${file.name}: ${err.message}`);
+                    log(`[FAIL] Error on ${item.name}: ${err.message}`);
                 }
             }
 
             log("📦 Generating downloadable zip package...");
-            const content = await zip.generateAsync({ type: "blob" });
-            const zipUrl = URL.createObjectURL(content);
+            const finalZipContent = await outputZip.generateAsync({ type: "blob" });
+            const zipUrl = URL.createObjectURL(finalZipContent);
             
             downloadBtn.href = zipUrl;
             downloadBtn.download = "converted_dib_folder.zip";
@@ -133,16 +162,16 @@
             convertBtn.disabled = false;
         });
 
-        function readFileAsDataURL(file) {
+        function blobToDataURL(blob) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result);
                 reader.onerror = reject;
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(blob);
             });
         }
 
-        function convertToDPIBlob(dataUrl, mimeType) {
+        function convertToDPIBlob(dataUrl) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.onload = () => {
